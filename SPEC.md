@@ -80,10 +80,13 @@ this iteration.
 
 | Field             | Type   | Required | Notes                                   |
 |-------------------|--------|----------|------------------------------------------|
-| `id`              | string | yes      | Custom identifier, e.g. `"b1"`. Distinct from MongoDB's `_id`. |
+| `_id`             | ObjectId | yes    | MongoDB's own primary key, assigned automatically on insert. Serialized as a 24-character hex string, e.g. `"6aacaa7424590f727a1a1316"`. |
 | `author`          | string | yes      | Full name of the author.                |
 | `title`           | string | yes      | Book title.                             |
 | `publicationDate` | string | yes      | ISO 8601 date, e.g. `"2021-08-17"`.     |
+
+There is no separate application-level id field. `_id` is the sole identifier, and
+it is what `GET /books/:id` matches on.
 
 ### Endpoints
 
@@ -94,8 +97,8 @@ Returns every book as a JSON array.
 - **Success — 200**
   ```json
   [
-    { "id": "b1", "author": "Octavia E. Butler", "title": "Kindred", "publicationDate": "1979-06-01" },
-    { "id": "b2", "author": "Ted Chiang", "title": "Exhalation", "publicationDate": "2019-05-07" }
+    { "_id": "6aacaa7424590f727a1a1316", "author": "Octavia E. Butler", "title": "Kindred", "publicationDate": "1979-06-01" },
+    { "_id": "6aacaa7424590f727a1a1317", "author": "Ted Chiang", "title": "Exhalation", "publicationDate": "2019-05-07" }
   ]
   ```
 - **Server error — 500**
@@ -105,16 +108,21 @@ Returns every book as a JSON array.
 
 #### `GET /books/:id`
 
-Returns a single book matching `id`.
+Returns a single book whose `_id` matches the `:id` path parameter. The parameter is
+the 24-character hex string form of the ObjectId, e.g.
+`GET /books/6aacaa7424590f727a1a1316`.
 
 - **Success — 200**
   ```json
-  { "id": "b1", "author": "Octavia E. Butler", "title": "Kindred", "publicationDate": "1979-06-01" }
+  { "_id": "6aacaa7424590f727a1a1316", "author": "Octavia E. Butler", "title": "Kindred", "publicationDate": "1979-06-01" }
   ```
 - **Not found — 404**
   ```json
   { "message": "Book not found" }
   ```
+  Returned both when the id is well-formed but matches no document, and when the id
+  is not a valid ObjectId at all. A malformed id is treated as "no such book" rather
+  than as a server fault, so a client typing a bad URL never sees a 500.
 - **Server error — 500**
   ```json
   { "message": "Internal server error" }
@@ -132,8 +140,13 @@ Returns a single book matching `id`.
 
 ### Implementation Notes
 
-- Use MongoDB with a custom `id` field for lookups (not `_id`), to keep
-  Week 1 simple.
+- Look books up by MongoDB's own `_id` rather than introducing a second,
+  application-level identifier. One document, one id — nothing to keep in sync, and
+  no risk of the two disagreeing.
+- Because `_id` is an ObjectId, the route must guard the path parameter with
+  `ObjectId.isValid()` before constructing one. `new ObjectId('not-a-real-id')`
+  throws, and an unguarded call would surface a malformed id as a 500 instead of the
+  intended 404.
 - Seed the `books` collection with at least 3 documents.
 - Database connection details (`MONGODB_URI`, `MONGODB_DB_NAME`) come from
   environment variables — never hard-coded or committed.
