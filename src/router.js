@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { getBooksHandler, getBookByIdHandler } from './controllers/books.js';
+import {
+  getBooksHandler,
+  getBookByIdHandler,
+  createBookHandler,
+  updateBookHandler,
+  deleteBookHandler
+} from './controllers/books.js';
 import {
   getAuthorsHandler,
   getAuthorByIdHandler,
@@ -27,8 +33,29 @@ const router = Router();
  *                 $ref: '#/components/schemas/Book'
  *       500:
  *         $ref: '#/components/responses/ServerError'
+ *   post:
+ *     summary: Create a book
+ *     tags: [Books]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BookInput'
+ *     responses:
+ *       201:
+ *         description: Book created.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       400:
+ *         $ref: '#/components/responses/BookValidationError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/books', getBooksHandler);
+router.post('/books', createBookHandler);
 
 /**
  * @openapi
@@ -49,8 +76,46 @@ router.get('/books', getBooksHandler);
  *         $ref: '#/components/responses/BookNotFound'
  *       500:
  *         $ref: '#/components/responses/ServerError'
+ *   put:
+ *     summary: Update a book by id
+ *     tags: [Books]
+ *     parameters:
+ *       - $ref: '#/components/parameters/BookId'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BookInput'
+ *     responses:
+ *       200:
+ *         description: The updated book.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       400:
+ *         $ref: '#/components/responses/BookValidationError'
+ *       404:
+ *         $ref: '#/components/responses/BookNotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ *   delete:
+ *     summary: Delete a book by id
+ *     tags: [Books]
+ *     parameters:
+ *       - $ref: '#/components/parameters/BookId'
+ *     responses:
+ *       204:
+ *         description: Book deleted.
+ *       404:
+ *         $ref: '#/components/responses/BookNotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/books/:id', getBookByIdHandler);
+router.put('/books/:id', updateBookHandler);
+router.delete('/books/:id', deleteBookHandler);
 
 /**
  * @openapi
